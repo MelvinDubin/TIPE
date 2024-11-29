@@ -19,12 +19,6 @@ type traitement_texte =
   (*noeuds internes*)
   |Effet of effet_texte 
 
-(*utilisé pour lire le gras et l'italique : noeuds pour un arbre intermediaire contenant des effets textes mais encore des listes de lexemes*)
-type intermediaire = 
-  (*feuilles*)
-  |Lexeme_list of (lexeme_t list)    
-  (*noeuds internes*)
-  |Effet_intermediaire of effet_texte 
 
 (* arbre généraux *)
 type 'a arbre = 
