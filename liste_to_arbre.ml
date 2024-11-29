@@ -20,74 +20,8 @@ let extrait_prochain_element_identique (l : 'a list) (x : 'a): bool*'a list*'a l
 let rec coupe_deux_sauts_ligne(l : lexeme_t list) : lexeme_t list list = 
   match (extrait_prochain_element_identique l DeuxSautsLigne_t) with 
   |(true, l1, l2) -> l1::coupe_deux_sauts_ligne l2 
-  |(false,_, l1) -> [l1] (*il n'y a plus d'autre deux sauts de ligne*)
+  |(false,l1, _) -> [l1] (*il n'y a plus d'autre deux sauts de ligne*)
 
-
-(* 
-let effet_gras_italique (lexlist: lexeme_t list): intermediaire arbre =
-  
-  (*memoire : 0 si il ne cherchait pas déjà à lire quelque chose, 1 si il lisait de l'italique (à un niveau plus haut)*)
-  (*liste renvoyée : liste des lexèmes restants à traiter*)
-  (* int renvoyé : réussite ou numéro d'erreur de la fermeture :
-  0 -> réussite lecture 
-  1 -> aucun lexème lu entre ** et ** (cas de : aa****aa )
-  *)
-  let rec fermer_gras (l: lexeme_t list) (memoire: int): ((intermediaire arbre) option) * (lexeme_t list) * int =
-    
-    (*tous les sous arbres qui seront dans le gras qui veut être fermé ici*)
-    let (sous_arbres_gras: (intermediaire arbre) list) = ref [] in
-    let lexemes_lus = ref [] in
-    let lexemes_a_lire = ref l in
-
-    let sortie = ref (None, [], 0) in
-
-    let fin_boucle = ref false in
-
-    while (!lexemes_a_lire <> []) && (not fin_boucle) do
-
-      match !lexemes_a_lire with
-      | Etoile_t :: Etoile_t :: q ->
-        begin
-          if (!sous_arbres_gras = []) then
-            begin
-              (*Echec fermeture type 1*)
-              sortie := (None, [], 1);
-              fin_boucle := true
-            end
-          else
-            begin
-              (*On ferme bien le gras*)
-              sous_arbres_gras := (Feuille(Lexeme_list(!lexemes_lus))) :: sous_arbres_gras;
-              lexemes_lus := [];          
-              sortie := (Noeud (Effet_intermediaire Gras, !sous_arbres_gras), q, 0);
-              fin_boucle := true
-            end
-        end
-
-      | Etoile_t :: q ->
-        begin
-          if (memoire = 1) then
-            (*On va fermer l'italique qui était ouvert avant ce gras*)
-            ()
-          else
-            (*on va vouloir fermer de l'italique*)
-            let (arb, liste_restante, etatreussite) = fermer_italique q 1 in
-
-      
-        end
-           
-        | x :: q -> begin
-        lexemes_lus := x :: lexemes_lus;
-        lexemes_a_lire := q
-      end
-
-      | [] ->
-    
-    done
-  
-  and fermer_italique (l: lexeme_t list) (memoire: int): ((intermediaire arbre) option) * (lexeme_t list) * int =
-    (* /// *)
- *)
 let rec affiche_liste (l: lexeme_t list): unit =
   match l with
   | [] -> print_newline ()
@@ -405,3 +339,29 @@ let rec affiche_liste (l: lexeme_t list): unit =
     | [] -> fin_boucle := true
   done;
   List.rev (!lexemes_lus)
+
+let cree_arbre(l : lexeme_t list) : traitement_texte arbre =
+
+
+  let paragraphes = coupe_deux_sauts_ligne l in 
+
+  (*traite le lexème Etoile_t*)
+  let paragraphes_gras_italique = List.map effet_gras_italique paragraphes in
+
+  let rec cree_sous_arbres (effet : effet_texte) (l_sous_arbres : lexeme_t list) : traitement_texte arbre = 
+    Noeud (Effet effet, List.map traite_lexeme l_sous_arbres)
+
+ 
+  and traite_lexeme (lex : lexeme_t) : traitement_texte arbre =
+    match lex with 
+    |Etoile_t ->  Feuille (Texte "*") (*les étoiles qui servent d'effet ont déjà été traitées*)
+    |Texte_t str -> Feuille (Texte str)
+    |Tiret_t -> Feuille (Texte "-") (*les tirets ne correspondent dans cette implémentation qu'à du texte*)
+    |DeuxSautsLigne_t -> failwith "les deux sauts de lignes ne doivent plus être présents"
+    |SautLigne_t -> Feuille (Texte "<br>") (*balise html pour le saut de ligne*) 
+    |Espace_t -> Feuille (Texte " ")
+    |ElementListe_t -> failwith "pas encore implémenté"
+    |Gras_t liste_en_gras -> cree_sous_arbres Gras liste_en_gras
+    |Italique_t liste_en_italique -> cree_sous_arbres Italique liste_en_italique
+
+  in Noeud(Effet EffetVide, List.map (cree_sous_arbres Paragraphe) paragraphes_gras_italique) (*cree l'arbre général en mettant une racine vide et des sous arbres correspondant aux paragraphes*)
