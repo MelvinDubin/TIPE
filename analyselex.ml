@@ -1,22 +1,5 @@
+(* a beseoin de : lexemes_types.ml*)
 
-  
-type lexeme =
-| Etoile_l
-| Texte_l of string 
-| Tiret_l
-| Espace_l
-| SautLigne_l
-| DeuxSautLigne_l
-
-(*lexèmes traités après le pré-traitement*)
-type lexeme_t =
-  | Etoile_t
-  | Texte_t of string 
-  | Tiret_t
-  | Espace_t
-  | SautLigne_t
-  | DeuxSautLigne_t
-  | ElementListe_t
 
 let etat_to_lexeme (e: int) (w: string): lexeme =
   match e with
@@ -25,7 +8,7 @@ let etat_to_lexeme (e: int) (w: string): lexeme =
   | 3 -> Tiret_l
   | 4 -> Espace_l
   | 5 -> SautLigne_l
-  | 6 -> DeuxSautLigne_l
+  | 6 -> DeuxSautsLigne_l
   | _ -> failwith "cet état ne correspond pas à un lexème"
   
 
@@ -88,15 +71,11 @@ let texte_to_lexeme_list (t: string): lexeme list =
     | 6, '\n' -> Some 6
     | _ -> None
   in
-
-
   let autom = creer_automate 7 [0] [1;2;3;4;5;6] transitions in
-
   (*
     let testi, testf = lit_mot autom t 0 in
     print_int testi; print_string "  "; print_int testf;print_newline ();
   *)
-
   let n = String.length t in
   let curseur = ref 0 in (*indique à quel caractère du texte t on en est*)
   let lex_list = ref [] in
@@ -114,15 +93,15 @@ let rec pretraitement_lexeme_list_aux (l: lexeme list) (l_t: lexeme_t list): lex
   match l with
   | [] -> List.rev l_t
   | SautLigne_l :: Etoile_l :: Espace_l :: q -> pretraitement_lexeme_list_aux q (ElementListe_t :: l_t)
-  | DeuxSautLigne_l :: Etoile_l :: Espace_l :: q -> pretraitement_lexeme_list_aux q (ElementListe_t :: l_t)
+  | DeuxSautsLigne_l :: Etoile_l :: Espace_l :: q -> pretraitement_lexeme_list_aux q (ElementListe_t :: l_t)
   | Etoile_l :: q -> pretraitement_lexeme_list_aux q (Etoile_t :: l_t)
   | Texte_l t :: q -> pretraitement_lexeme_list_aux q (Texte_t t :: l_t)
   | SautLigne_l :: Tiret_l :: Espace_l :: q -> pretraitement_lexeme_list_aux q (ElementListe_t :: l_t)
-  | DeuxSautLigne_l :: Tiret_l :: Espace_l :: q -> pretraitement_lexeme_list_aux q (ElementListe_t :: l_t)
+  | DeuxSautsLigne_l :: Tiret_l :: Espace_l :: q -> pretraitement_lexeme_list_aux q (ElementListe_t :: l_t)
   | Tiret_l :: q -> pretraitement_lexeme_list_aux q (Tiret_t :: l_t)
   | Espace_l :: q -> pretraitement_lexeme_list_aux q (Espace_t :: l_t)
   | SautLigne_l :: q -> pretraitement_lexeme_list_aux q (SautLigne_t :: l_t)
-  | DeuxSautLigne_l :: q -> pretraitement_lexeme_list_aux q (DeuxSautLigne_t :: l_t)
+  | DeuxSautsLigne_l :: q -> pretraitement_lexeme_list_aux q (DeuxSautsLigne_t :: l_t)
 
 
 let pretraitement_lexeme (l: lexeme list): lexeme_t list =
