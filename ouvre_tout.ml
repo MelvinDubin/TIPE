@@ -1,0 +1,7 @@
+#use "autom_types.ml"
+#use "lexemes_types.ml"
+#use "arbres_types.ml"
+#use "analyselex.ml"
+#use "arbres_to_html.ml"
+#use "liste_to_arbre.ml"
+#use "ocaml_highlight.ml"
