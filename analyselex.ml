@@ -64,14 +64,19 @@ let texte_to_lexeme_list (t: string): lexeme list =
     | 0, '-' -> Some 3
     | 0, ' ' -> Some 4 
     | 0, '\n' -> Some 5
+    | 0, '\r' -> Some 7
     | 0, _ -> Some 2
-    | 2, x when not (List.mem x ['*'; '-'; ' '; '\n']) -> Some 2
+    | 2, x when not (List.mem x ['*'; '-'; ' '; '\n'; '\r']) -> Some 2
     | 4, ' ' -> Some 4 
     | 5, '\n' -> Some 6
+    | 5, '\r' -> Some 8
     | 6, '\n' -> Some 6
+    | 6, '\r' -> Some 8
+    | 7, '\n' -> Some 5
+    | 8, '\n' -> Some 6
     | _ -> None
   in
-  let autom = creer_automate 7 [0] [1;2;3;4;5;6] transitions in
+  let autom = creer_automate 9 [0] [1;2;3;4;5;6] transitions in
   (*
     let testi, testf = lit_mot autom t 0 in
     print_int testi; print_string "  "; print_int testf;print_newline ();
@@ -106,14 +111,3 @@ let rec pretraitement_lexeme_list_aux (l: lexeme list) (l_t: lexeme_t list): lex
 
 let pretraitement_lexeme (l: lexeme list): lexeme_t list =
   SautLigne_t :: (pretraitement_lexeme_list_aux l [])
-
-(*Lit les lignes de file en modifiant par effet de bord la liste all_lines pour lui ajouter les lignes lues au fur et à mesure,
-et ferme le fichier*)
-let lit_fichier (filename: string): string =
-  let file = open_in filename in
-  let taille_tot = in_channel_length file in
-  let s = Bytes.create taille_tot in
-  really_input file s 0 taille_tot;
-  close_in file;
-  Bytes.unsafe_to_string s
-
