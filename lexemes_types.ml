@@ -18,3 +18,21 @@ type lexeme_t =
   | Gras_t of lexeme_t list
   | Italique_t of lexeme_t list
   | ListePuces_t of (lexeme_t list list) 
+
+  
+let rec print_lex (lex: lexeme_t): unit =
+  match lex with
+  | Etoile_t -> print_string "*"
+  | Texte_t(t)  -> print_string ("\""^t^"\"")
+  | Tiret_t -> print_string "-"
+  | DeuxSautsLigne_t -> print_string "deuxsautslignes"
+  | SautLigne_t -> print_string "sautligne"
+  | Espace_t  -> print_string " "
+  | ElementListe_t -> print_string "eltliste"
+  | Gras_t(l) -> print_string "gras("; print_lex_list l; print_string ")"
+  | Italique_t(l) -> print_string "italique("; print_lex_list l; print_string ")"
+
+and print_lex_list (l: lexeme_t list): unit =
+  match l with
+  | [] -> print_string "";
+  | x :: q -> print_lex x ; print_string";"; print_lex_list q

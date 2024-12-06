@@ -109,7 +109,7 @@ let rec affiche_liste (l: lexeme_t list): unit =
                 | 3 -> (
                   assert(liste_restante = []);
                   (*On n'a pas pu fermer l'italique, et on n'a pas non plus trouvé de quoi fermer le gras d'avant*)
-                  sortie := (((List.rev (Etoile_t :: !lexemes_lus)) @ resultat), liste_restante, 0);
+                  sortie := (((List.rev (Etoile_t :: !lexemes_lus)) @ resultat), liste_restante, 3);
                   fin_boucle := true
                 )
                 | _ -> failwith "Un état non reconnu a été renvoyé"   
@@ -213,7 +213,8 @@ let rec affiche_liste (l: lexeme_t list): unit =
                   (*Fin de liste atteinte*)
                   assert(liste_restante = []);
                   (*On n'a pas pu fermer le gras, et on n'a pas non plus trouvé de quoi fermer l'italique d'avant*)
-                  sortie := (((List.rev (Etoile_t :: Etoile_t :: !lexemes_lus)) @ resultat), liste_restante, 0);
+                  sortie := (((List.rev (Etoile_t :: Etoile_t :: !lexemes_lus)) @ resultat), liste_restante, 3);
+
                   fin_boucle := true
                 )
                 | 4 -> (
@@ -285,7 +286,7 @@ let rec affiche_liste (l: lexeme_t list): unit =
             lexemes_lus := lexlu :: !lexemes_lus;
             lexemes_a_lire := liste_restante
           )
-          | _ -> failwith "La fermeture du gras n'a pas renvoyé que le lexème Gras_t(..)"
+          | _ -> print_lex_list resultat; print_newline ();failwith "La fermeture du gras n'a pas renvoyé que le lexème Gras_t(..)"
         )
         | 1 -> (
           lexemes_lus := Etoile_t :: !lexemes_lus;
@@ -324,7 +325,7 @@ let rec affiche_liste (l: lexeme_t list): unit =
         | 2 -> failwith "L'italique a voulu fermer du gras ouvert précédemment, impossible car rien n'était ouvert"
         | 3 -> (
           assert(liste_restante = []);
-          lexemes_lus := (Etoile_t :: !lexemes_lus) @ resultat;
+          lexemes_lus := (List.rev resultat) @ (Etoile_t :: !lexemes_lus);
           lexemes_a_lire := [];
         )
         | _ -> failwith "Etat non utilisé renvoyé par la fermeture de gras, erreur"
