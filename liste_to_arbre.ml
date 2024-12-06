@@ -58,10 +58,36 @@ let rec affiche_liste (l: lexeme_t list): unit =
       | Etoile_t :: Etoile_t :: q ->
         begin
           if (!lexemes_lus = []) then
-            (*Echec fermeture type 1 : rien lu entre ** et ** *)
+            (*On n'a rien lu depuis les dernières **, donc on lance une sous-lecture de gras*)
             begin
-              sortie := ([], q, 1);
-              fin_boucle := true
+              assert(memoire = 0); (*Si on voulait fermer de l'italique, on aurait lu le groupe *** et l'aurait fermé*)
+              let (resultat, liste_restante, etatreussite) = fermer_gras q 0 in
+                match etatreussite with
+                | 0 -> (
+                  (*Le gras a été fermé*)
+                  match resultat with
+                  | [lex_ital] ->
+                    lexemes_lus := lex_ital :: !lexemes_lus;
+                    lexemes_a_lire := liste_restante;
+                  | _ -> failwith "sous-gras bien fermé mais on n'a pas renvoyé juste Gras_t() dans resultat"
+                )
+                | 2 -> failwith "impossible, On a voulu fermer de l'italique alors qu'il n'y en avait pas d'ouvert avant"
+                | 3 -> (
+                  assert(liste_restante = []);
+                  
+                  sortie := (((List.rev (Etoile_t :: Etoile_t :: !lexemes_lus)) @ resultat), liste_restante, 3);
+                  fin_boucle := true
+                )
+                | 4 -> (
+                  (*On a fermé de l'italique avec le sous-gras*)
+                  match resultat with
+                  | [lexlu] -> (
+                    lexemes_lus := lexlu :: Etoile_t :: !lexemes_lus;
+                    lexemes_a_lire := liste_restante
+                  )
+                  | _ -> failwith "La fermeture du sous-gras(en italique, état 4) n'a pas renvoyé que le lexème Italique_t(..)"
+                )
+                | _ -> failwith "Un état non reconnu a été renvoyé"   
             end
           else
             (*On ferme bien le gras*)
