@@ -17,4 +17,4 @@ type lexeme_t =
   | ElementListe_t
   | Gras_t of lexeme_t list
   | Italique_t of lexeme_t list
-  
+  | ListePuces_t of (lexeme_t list list) 

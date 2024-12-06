@@ -340,13 +340,35 @@ let rec affiche_liste (l: lexeme_t list): unit =
   done;
   List.rev (!lexemes_lus)
 
+(*cherche s'il y a une liste à puces dans la liste de lexèmes t (il n'y a forcément qu'une liste au plus, car est utilisée après l'appel des coupe deux sauts de ligne)*)
+let liste_puces (l : lexeme_t list) : lexeme_t list = 
+
+  (*sachant que l_aux est la suite du début d'une liste à puces, renvoie la liste des "éléments de liste", sous la forme de listes eux-mêmes*)
+  let rec construit_liste (l_aux : lexeme_t list): lexeme_t list list =
+    match (extrait_prochain_element_identique l_aux ElementListe_t) with 
+    |(true, l1, l2) -> l1::construit_liste l2 
+    |(false,l1, _) -> [l1] 
+  in 
+
+  (*cherche s'il y a une liste à puces dans la liste de lexèmes, et regroupe les éléments de la liste dans un lexèmes liste à puces*)
+  let rec cherche_liste (l_aux : lexeme_t list) : lexeme_t list = 
+    match l_aux with 
+    |[] -> []
+    |ElementListe_t::q -> [ListePuces_t (construit_liste q)]
+    |x::q -> x::(cherche_liste q)
+  in 
+  cherche_liste l 
+
 let cree_arbre(l : lexeme_t list) : traitement_texte arbre =
 
 
   let paragraphes = coupe_deux_sauts_ligne l in 
 
+  (*traite le lexème "ElementListe_t"*)
+  let paragraphes_listes = List.map liste_puces paragraphes in 
+
   (*traite le lexème Etoile_t*)
-  let paragraphes_gras_italique = List.map effet_gras_italique paragraphes in
+  let paragraphes_gras_italique = List.map effet_gras_italique paragraphes_listes in
 
   let rec cree_sous_arbres (effet : effet_texte) (l_sous_arbres : lexeme_t list) : traitement_texte arbre = 
     Noeud (Effet effet, List.map traite_lexeme l_sous_arbres)
@@ -360,7 +382,8 @@ let cree_arbre(l : lexeme_t list) : traitement_texte arbre =
     |DeuxSautsLigne_t -> failwith "les deux sauts de lignes ne doivent plus être présents"
     |SautLigne_t -> Feuille (Texte "<br>") (*balise html pour le saut de ligne*) 
     |Espace_t -> Feuille (Texte " ")
-    |ElementListe_t -> failwith "pas encore implémenté"
+    |ElementListe_t -> failwith "ces lexèmes doivent déjà avoir été gérés à ce stade"
+    |ListePuces_t elements_listes -> Noeud(Effet Liste_puces, List.map (cree_sous_arbres (Element_liste)) elements_listes)
     |Gras_t liste_en_gras -> cree_sous_arbres Gras liste_en_gras
     |Italique_t liste_en_italique -> cree_sous_arbres Italique liste_en_italique
 
