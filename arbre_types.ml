@@ -2,25 +2,26 @@
 - lexemes_types.ml*)
 
 (*types d'effet appliqués à un texte*)
-type effet_texte =
+type effet =
   |Italique
   |Gras
   |EffetVide 
-  |Liste_puces
-  |Liste_numerotee
-  |Element_liste
-  |Paragraphe 
   |A_implementer
 
-(*noeuds pour un arbre de texte (html ou markdown)*)
-type traitement_texte = 
-  (*feuilles*)
-  |Texte of string   
-  (*noeuds internes*)
-  |Effet of effet_texte 
+(*textes et effets avec du texte*)
+type texte = 
+  |Texte_nu of string 
+  |Texte_effet of (effet*(texte list))
 
+type bloc = 
+  |Texte of texte
+  |ListeNumerotee of bloc list 
+  |ListeAPuces of bloc list
+  (*|Tableau
+  |Code*) (*a implementer*) 
 
-(* arbre généraux *)
-type 'a arbre = 
-  |Feuille of 'a 
-  |Noeud of 'a*('a arbre list)
+type titre = (int*texte) (*l'entier correspond au niveau du titre, en markdown, le nombre de # et html <h...>*)
+type division =
+  |Section of titre*division list
+  |Paragraphe of bloc list 
+  |Barre
