@@ -9,6 +9,7 @@ let etat_to_lexeme (e: int) (w: string): lexeme =
   | 4 -> Espace_l
   | 5 -> SautLigne_l
   | 6 -> DeuxSautsLigne_l
+  | 9 -> Diese_l
   | _ -> failwith "cet état ne correspond pas à un lexème"
   
 
@@ -65,8 +66,9 @@ let texte_to_lexeme_list (t: string): lexeme list =
     | 0, ' ' -> Some 4 
     | 0, '\n' -> Some 5
     | 0, '\r' -> Some 7
+    | 0, '#' -> Some 9
     | 0, _ -> Some 2
-    | 2, x when not (List.mem x ['*'; '-'; ' '; '\n'; '\r']) -> Some 2
+    | 2, x when not (List.mem x ['*'; '-'; ' '; '\n'; '\r'; '#']) -> Some 2
     | 4, ' ' -> Some 4 
     | 5, '\n' -> Some 6
     | 5, '\r' -> Some 8
@@ -76,7 +78,7 @@ let texte_to_lexeme_list (t: string): lexeme list =
     | 8, '\n' -> Some 6
     | _ -> None
   in
-  let autom = creer_automate 9 [0] [1;2;3;4;5;6] transitions in
+  let autom = creer_automate 10 [0] [1;2;3;4;5;6;9] transitions in
   (*
     let testi, testf = lit_mot autom t 0 in
     print_int testi; print_string "  "; print_int testf;print_newline ();
@@ -107,7 +109,59 @@ let rec pretraitement_lexeme_list_aux (l: lexeme list) (l_t: lexeme_t list): lex
   | Espace_l :: q -> pretraitement_lexeme_list_aux q (Espace_t :: l_t)
   | SautLigne_l :: q -> pretraitement_lexeme_list_aux q (SautLigne_t :: l_t)
   | DeuxSautsLigne_l :: q -> pretraitement_lexeme_list_aux q (DeuxSautsLigne_t :: l_t)
+  | Diese_l :: q -> pretraitement_lexeme_list_aux q (Diese_t :: l_t)
 
+(*Renvoie la liste de lexèmes traités obtenue en remplaçant les séquences
+de # pour faire un titre par le lexème Titre_t(i, sl) où i est le niveau du titre
+obtenu avec le nombre de #, et sl les lexèmes lus dans ce titre,
+/!\ si ## n'est pas suivi d'un espace ou d'un saut de ligne, ce n'est pas un titre mais du texte*)
+let transforme_dieses_titre (l: lexeme_t list): lexeme_t list =
+  (*Renvoie le nombre de dièses consécutifs commençant la liste ll (en commençant à compteur),
+  et la liste venant après*)
+  let rec compte_diese (ll: lexeme_t list) (compteur: int): int*(lexeme_t list) =
+    match ll with
+    | Diese_t :: q -> compte_diese q (compteur + 1)
+    | _ -> (compteur, ll)
+  in
+  (*Renvoit la liste des lexèmes de ll jusqu'au premier SautLigne ou DeuxSautsLigne (ou fin de ll si
+  il n'y en a aucun), 
+  en remplaçant au passage les # par du Texte_t et non des Diese_t (la liste qui sera renvoyée
+  et stockée à l'envers par le paramètre ll_t),
+  ainsi que la liste restante après la lecture de ceux-ci sans compter le saut de ligne final*)
+  let rec lexemes_ligne_sansdiese (ll: lexeme_t list) (ll_t: lexeme_t list): (lexeme_t list)*(lexeme_t list) =
+    match ll with
+    | SautLigne_t :: q -> (List.rev ll_t, q)
+    | DeuxSautsLigne_t :: q -> (List.rev ll_t, q)
+    | [] -> (List.rev ll_t, [])
+    | Diese_t :: _ ->
+      let (n, reste) = compte_diese ll 0 in
+      lexemes_ligne_sansdiese reste (Texte_t (String.make n '#') :: ll_t)
+    | x :: q -> lexemes_ligne_sansdiese q (x :: ll_t)
+  in
+
+  let rec transfo_diese (ll: lexeme_t list) (ll_t: lexeme_t list): lexeme_t list =
+    match ll with
+    | z :: Diese_t :: q  when (z=SautLigne_t || z=DeuxSautsLigne_t)->
+      begin
+      let (niv, reste) = compte_diese ll 0 in
+      match reste with
+      | x :: q
+      when ((List.mem x [Espace_t; SautLigne_t; DeuxSautsLigne_t]) && niv <= 6) ->
+        (*C'est un titre*)
+        if x = Espace_t then
+          let (contenu_titre, suite) = lexemes_ligne_sansdiese q [] in
+          transfo_diese (DeuxSautsLigne_t :: suite) ((Titre_t (niv, contenu_titre)) :: ll_t)
+        else
+          (*Le titre est vide*)
+          transfo_diese (DeuxSautsLigne_t :: q) ((Titre_t (niv, [])) :: ll_t)
+      | _ ->
+        (*Pas un titre*)
+        transfo_diese reste (Texte_t (String.make niv '#') :: ll_t)
+      end
+    | x :: q -> transfo_diese q (x :: ll_t)
+    | [] -> List.rev ll_t
+  in 
+  transfo_diese l []
 
 let pretraitement_lexeme (l: lexeme list): lexeme_t list =
-  SautLigne_t :: (pretraitement_lexeme_list_aux l [])
+  transforme_dieses_titre (SautLigne_t :: (pretraitement_lexeme_list_aux l []))

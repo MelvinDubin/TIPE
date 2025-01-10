@@ -2,7 +2,8 @@ type lexeme =
   |Etoile_l
   |Texte_l of string 
   |Tiret_l  
-  |Espace_l 
+  |Espace_l
+  |Diese_l
   |SautLigne_l 
   |DeuxSautsLigne_l
 
@@ -13,11 +14,13 @@ type lexeme_t =
   | Tiret_t
   | DeuxSautsLigne_t
   | SautLigne_t
-  | Espace_t 
+  | Espace_t
   | ElementListe_t
   | Gras_t of lexeme_t list
   | Italique_t of lexeme_t list
   | ListePuces_t of (lexeme_t list list) 
+  | Diese_t
+  | Titre_t of int*(lexeme_t list) (*l'entier = le niveau du titre*) 
 
   
 let rec print_lex (lex: lexeme_t): unit =
@@ -31,6 +34,7 @@ let rec print_lex (lex: lexeme_t): unit =
   | ElementListe_t -> print_string "eltliste"
   | Gras_t(l) -> print_string "gras("; print_lex_list l; print_string ")"
   | Italique_t(l) -> print_string "italique("; print_lex_list l; print_string ")"
+  | _ -> failwith "pas assigné"
 
 and print_lex_list (l: lexeme_t list): unit =
   match l with
