@@ -118,6 +118,7 @@ obtenu avec le nombre de #, et sl les lexèmes lus dans ce titre,
 let transforme_dieses_titre (l: lexeme_t list): lexeme_t list =
   (*Renvoie le nombre de dièses consécutifs commençant la liste ll (en commençant à compteur),
   et la liste venant après*)
+  
   let rec compte_diese (ll: lexeme_t list) (compteur: int): int*(lexeme_t list) =
     match ll with
     | Diese_t :: q -> compte_diese q (compteur + 1)
@@ -140,10 +141,13 @@ let transforme_dieses_titre (l: lexeme_t list): lexeme_t list =
   in
 
   let rec transfo_diese (ll: lexeme_t list) (ll_t: lexeme_t list): lexeme_t list =
+    (*print_string "--\n";
+    print_lex_list ll; print_newline ();
+    print_lex_list ll_t; print_newline ();*)
     match ll with
     | z :: Diese_t :: q  when (z=SautLigne_t || z=DeuxSautsLigne_t)->
       begin
-      let (niv, reste) = compte_diese ll 0 in
+      let (niv, reste) = compte_diese (Diese_t :: q) 0 in
       match reste with
       | x :: q
       when ((List.mem x [Espace_t; SautLigne_t; DeuxSautsLigne_t]) && niv <= 6) ->

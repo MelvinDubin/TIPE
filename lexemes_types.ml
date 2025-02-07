@@ -21,6 +21,7 @@ type lexeme_t =
   | ListePuces_t of (lexeme_t list list) 
   | Diese_t
   | Titre_t of int*(lexeme_t list) (*l'entier = le niveau du titre*) 
+  | Liste_inmbriquee_t of lexeme_t list
 
   
 let rec print_lex (lex: lexeme_t): unit =
@@ -32,8 +33,11 @@ let rec print_lex (lex: lexeme_t): unit =
   | SautLigne_t -> print_string "sautligne"
   | Espace_t  -> print_string " "
   | ElementListe_t -> print_string "eltliste"
-  | Gras_t(l) -> print_string "gras("; print_lex_list l; print_string ")"
-  | Italique_t(l) -> print_string "italique("; print_lex_list l; print_string ")"
+  | Gras_t(l) -> (print_string "gras("; print_lex_list l; print_string ")")
+  | Italique_t(l) -> (print_string "italique("; print_lex_list l; print_string ")")
+  | Diese_t -> print_string "diese"
+  | Titre_t(n, l) -> (print_string "titre(niv:"; print_int n; print_char ','; print_lex_list l; print_string ")")
+  | Liste_imbriquee_t(l) -> (print_string "LI("; print_lex_list l; print_string ")")
   | _ -> failwith "pas assigné"
 
 and print_lex_list (l: lexeme_t list): unit =
