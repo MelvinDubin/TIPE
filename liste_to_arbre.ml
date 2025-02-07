@@ -33,7 +33,111 @@ let rec affiche_liste (l: lexeme_t list): unit =
   | Espace_t :: q -> print_string " "; affiche_liste q
   | _ -> failwith "pas implémenté"
 
- let effet_gras_italique (lexlist: lexeme_t list): (lexeme_t list) =
+(* Découpe la liste de lexèmes traités en coupant à chaque nouveau titre de même niveau,
+et découpe récursivement avec les titres de niveau 1 de moins dans les listes créées, et ainsi de suite.
+Toutes les listes créées (sauf la 1ere) commencent donc par un lexème titre*)
+let decoupage_divisions (l: lexeme_t list): lexeme_t list =
+
+  let titres_presents = [|false; false; false; false; false; false |] in
+  (*Pour i entre 1 et 6, si il existe un titre de niveau i dans ll, met à true
+  le booléen d'indice i de titres_presents*)
+  let rec presence_titres (ll: lexeme_t list): unit =
+    if (titres_presents.(0) && titres_presents.(1)
+      && titres_presents.(2) && titres_presents.(3)
+      && titres_presents.(4) && titres_presents.(5)) then
+        (*Tous les niveaux de titre possibles ont été trouvés, pas besoin d'en chercher d'autres*)
+        ()
+    else (
+      match ll with
+      | [] -> ()
+      | Titre_t(n, _) :: q -> (
+        titres_presents.(n-1) <- true;
+        presence_titres q
+      )
+      | _ :: q -> presence_titres q
+    )
+  in
+  presence_titres l;
+  let niveaux_presents = (List.filter (fun x -> titres_presents.(x-1)) [1;2;3;4;5;6]) in
+  
+  (*Renvoie la liste des lexèmes présents avant le premier titre de niveau niv lu (titre exclus, et
+  premier lexème de la liste exclus car sinon on ne lirait rien),
+  et la liste de ce qui vient ensuite (titre qui a fait le découpagee inclus)
+  Elle renvoie donc toute la liste si il n'y a pas de titres de niveau niv lus*)
+  let coupe_prochain_titre (niv: int) (ll: lexeme_t list): (lexeme_t list)*(lexeme_t list) =
+    
+    (*Même effet mais en lisant le premier lexème, supposant donc qu'il ne s'agit pas d'un titre sous
+    peine de renvoyer ([], _)    
+    acc conserve la liste des lexèmes venant avant le premier titre lu*)
+    let rec coupe_prochain_titre_avec_premier (lll: lexeme_t list) (acc: lexeme_t list): (lexeme_t list)*(lexeme_t list)=
+      match lll with
+      | [] -> (List.rev acc, [])
+      | Titre_t(n, _) :: _ when (n=niv)-> (List.rev acc, lll) (*Titre inclus dans ce qui reste à lire*)
+      | x :: q -> coupe_prochain_titre_avec_premier q (x :: acc)
+    in
+    match ll with
+    | x :: q -> 
+      let (a,b) = coupe_prochain_titre_avec_premier q [] in (*On a retiré le 1er lexème*)
+      (x :: a, b)
+    | [] -> ([], [])
+  in 
+
+  (*Découpe ll en liste de listes de lexèmese en coupant à chaque titre de niveau niv,
+  niv étant le premier élément de la liste niveaux,
+  et renvoie une Liste_imbriquee_t(ce découpage)
+  Précondition : les titres de ll sont de niveau niv ou moins*)
+  let rec decoupe_divisions_niveau (niveaux: int list) (ll: lexeme_t list): lexeme_t =
+    
+    match niveaux with 
+    | [] -> Liste_imbriquee_t(ll) (*Pas d'autres niveaux de titres repérés au début*)
+    | niv :: niveaux_suivants -> 
+      begin
+        let tous_lexemes = ref ll in
+        let decoupage: (lexeme_t list list) ref = ref [] in    
+        while (not (!tous_lexemes = [])) do
+          let decoupage_actuel, liste_reste = coupe_prochain_titre niv !tous_lexemes in
+          decoupage := decoupage_actuel :: !decoupage;
+          (*La ligne précédente fait le découpage récursif pour les titres de niveau plus petits,
+          et s'arrêtera à ceux de niveau 6 puisque decoupe_divisions_niveau ne fera alors plus d'appels récursifs*)
+          tous_lexemes := liste_reste
+        done;
+
+        Liste_imbriquee_t (List.map
+          (fun lexlist -> decoupe_niveau_ignoretitre niveaux_suivants lexlist)
+          (List.rev !decoupage))
+      end
+  and decoupe_niveau_ignoretitre (niveaux: int list) (lexlist: lexeme_t list): lexeme_t =
+    (*Appliqué sur lexlist, va la découper selon les titres de niveau niv (1er élément de niveaux)
+    de la façon suivante, et renvoyer Liste_imbriquee_t (cette liste obtenue):
+    Si lexlist commencee par un titre de niveau < niv (titre + grand), il sera conservé au début de la liste construite
+    Sinon, le premier élément de la liste construite sera la première section de niveau niv*)
+      match niveaux with
+        | [] -> Liste_imbriquee_t(lexlist)
+        | niv :: _ -> 
+          begin
+            match lexlist with
+            | Titre_t(n, t) :: q when n < niv ->
+              begin
+                match decoupe_divisions_niveau niveaux q with
+                | Liste_imbriquee_t(resultat) -> Liste_imbriquee_t(Titre_t(n, t) :: resultat)
+                | _ -> failwith "Ne peut pas arriver"
+              end
+            | _ -> decoupe_divisions_niveau niveaux lexlist
+            
+          end
+  in
+  match decoupe_divisions_niveau niveaux_presents l with
+  | Liste_imbriquee_t q -> q
+  | _ -> failwith "Ne peut pas arriver"
+
+
+
+
+
+
+(*
+
+let effet_gras_italique (lexlist: lexeme_t list): (lexeme_t list) =
   
   (*memoire : 0 si il ne cherchait pas déjà à lire quelque chose, 1 si il lisait de l'italique (à un niveau plus haut)*)
   (*liste renvoyée : liste des lexèmes restants à traiter*)
@@ -415,3 +519,6 @@ let cree_arbre(l : lexeme_t list) : traitement_texte arbre =
     |Italique_t liste_en_italique -> cree_sous_arbres Italique liste_en_italique
 
   in Noeud(Effet EffetVide, List.map (cree_sous_arbres Paragraphe) paragraphes_gras_italique) (*cree l'arbre général en mettant une racine vide et des sous arbres correspondant aux paragraphes*)
+
+
+  *)
