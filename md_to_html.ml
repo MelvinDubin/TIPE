@@ -8,9 +8,11 @@ let lit_fichier (filename: string): string =
   close_in file;
   Bytes.unsafe_to_string s
 
+
+
 (*Crée le fichir filename dans lequel est écrit contenu*)
 let markdown_to_html (filename_md: string) (filename_html: string): unit =
-  let lexemes_traites = pretraitement_lexeme (texte_to_lexeme_list (lit_fichier filename_md)) in
+  let arbre_syntaxe = lexemeliste_to_arbre_syntaxe (pretraitement_lexeme (texte_to_lexeme_list (lit_fichier filename_md))) in
   let file_out = open_out filename_html in
-  ecrit_en_html file_out (cree_arbre lexemes_traites);
+  ecrit_en_html file_out (arbre_syntaxe);
   close_out file_out
