@@ -23,7 +23,7 @@ type bloc =
 
 type titre = (int*texte) (*l'entier correspond au niveau du titre, en markdown, le nombre de # et html <h...>*)
 type division =
-  |Section of titre*division list
+  |Section of titre*(division list)
   |Paragraphe of bloc list 
   |Barre
 

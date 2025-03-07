@@ -168,4 +168,4 @@ let transforme_dieses_titre (l: lexeme_t list): lexeme_t list =
   transfo_diese l []
 
 let pretraitement_lexeme (l: lexeme list): lexeme_t list =
-  transforme_dieses_titre (SautLigne_t :: (pretraitement_lexeme_list_aux l []))
+  transforme_dieses_titre (DeuxSautsLigne_t :: (pretraitement_lexeme_list_aux l []))

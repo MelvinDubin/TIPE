@@ -16,12 +16,13 @@ type lexeme_t =
   | SautLigne_t
   | Espace_t
   | ElementListe_t
+  | Effet_t of (effet)*(lexeme_t list)
   | Gras_t of lexeme_t list
   | Italique_t of lexeme_t list
-  | ListePuces_t of (lexeme_t list list) 
+  | ListePuces_t of lexeme_t list
   | Diese_t
   | Titre_t of int*(lexeme_t list) (*l'entier = le niveau du titre*) 
-  | Liste_inmbriquee_t of lexeme_t list
+  | Liste_imbriquee_t of lexeme_t list
 
   
 let rec print_lex (lex: lexeme_t): unit =
