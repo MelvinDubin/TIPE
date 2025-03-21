@@ -127,33 +127,44 @@ let decoupage_sections_titres (l: lexeme_t list): lexeme_t list =
 
 
 
-(*Pour chaque occurence d'une Liste_imbriquee_t dans l ayant comme paramètre une
+
+(*Pour chaque occurence d'une ListePuces_t OU Liste_imbriquee_t dans l ayant comme paramètre une
 liste de lexèmes qui contient des DeuxSautsLigne_t (n'étant pas le premier élément
 de cette liste), decoupe_paragraphes va remplacer cette occurence par une suite de
-Liste_imbriquee_t ayant comme paramètre chacune les listes obtenues en coupant la
+Liste_imbriquee_t ayant comme paramètre chacune les listes obtenues en coupant laé
 la liste initiale à chaque "DeuxSautsLigne_t" (sauf le 1er, toujours présent
 au début d'un paragraphe*)
 let decoupage_paragraphes (l: lexeme_t list): (lexeme_t list) =
-  (*Découpe la liste restants au premier DeuxSautsLigne_t trouvé, renvoie un couple contenant
+
+  (*Découpe la liste restants au premier lexème de séparation trouvé (les lexèmes de séparation sont
+  ceux donnés dans lexemeèsep), et renvoie un couple contenant
   (liste des lexèmes avant ce DeuxSautsLigne_t, liste des lexèmes après (lui inclus)),
   en utilisant lus comme accumulateur des lexèmes qui formeront la 1ere liste,
   pour être récursive terminale
-  Il vaut mieux que restants ne commence pas tout de suite par un DeuxSautsLigne_t, sous risque
+  Il vaut mieux que restants ne commence pas tout de suite par un lexème de séparation, sous peine
   de renvoyer ([], même liste)*)
-  let rec coupe_deuxsautsligne (lus: lexeme_t list) (restants: lexeme_t list): (lexeme_t list) * (lexeme_t list) =
+  let rec coupe_prochain_lexeme (lus: lexeme_t list) (restants: lexeme_t list) (lexeme_sep : lexeme_t list): (lexeme_t list) * (lexeme_t list) =
     match restants with
-    | DeuxSautsLigne_t :: q -> (List.rev lus, restants)
+    | lex :: q ->(
+      if List.mem lex lexeme_sep then
+        (List.rev lus, restants) (*Le lexème lu sert de coupure*)
+      else
+        coupe_prochain_lexeme (lex :: lus) q lexeme_sep
+    )
     | [] -> (List.rev lus, [])
-    | x :: q -> coupe_deuxsautsligne (x :: lus) q
   in
-  (*Renvoie une liste de Liste_imbriquee_t(l_i) où chaque l_i est un morceau de l, étant découpés à chaque
-  DeuxSautsLigne_t, de sorte que la concaténation de tous les l_i reformerait l sans les DeuxSautsLigne_t
+
+
+  (*Renvoie une liste de Liste_imbriquee_t(l_i) et de ListePuces_t(l_i) où chaque l_i est un morceau de l, étant découpés à chaque
+  DeuxSautsLigne_t ou ElementListe_t, de sorte que la concaténation de tous les l_i reformerait l sans les DeuxSautsLigne_t
   listes_decoupees est l'accumulateur qui contient les Liste_imbriquee_t déjà fabriquées*)
   let rec coupe_tous_deuxsautsligne (listes_decoupees: lexeme_t list) (l: lexeme_t list): lexeme_t list =
     match l with
     | [] -> List.rev listes_decoupees
-    | DeuxSautsLigne_t :: q -> let (decoupage1, reste) = coupe_deuxsautsligne [] q in
+    | DeuxSautsLigne_t :: q -> let (decoupage1, reste) = coupe_prochain_lexeme [] q [DeuxSautsLigne_t; ElementListe_t] in
       coupe_tous_deuxsautsligne (Liste_imbriquee_t(decoupage1)::listes_decoupees) reste
+    | ElementListe_t :: q -> let (interieurliste, reste) = coupe_prochain_lexeme [] l [DeuxSautsLigne_t] in (*l et pas q, car on garde ElementListe_t au début, et on ne coupe qu'à la fin de la liste donc le prochain DeuxSautsLigne_t*)
+      coupe_tous_deuxsautsligne (ListePuces_t(interieurliste)::listes_decoupees) reste
     | _ -> List.rev(Liste_imbriquee_t(l) :: listes_decoupees) (*ne commence pas par un DeuxSautsLigne_t -> 1 seul paragraphe*)
   in
 
@@ -172,12 +183,14 @@ let decoupage_paragraphes (l: lexeme_t list): (lexeme_t list) =
       assert(lus = []); (*Normalement, on ne lit un Titre_t que si il commence une section et est le 1er elt d'une Liste_imbriquee_t*)
       [Liste_imbriquee_t([Titre_t(niv, l); Liste_imbriquee_t(modifie_sous_liste [] reste)])] (*Représente : le titre et le contenu de la section*)
     )
-    | DeuxSautsLigne_t :: _ -> (*On découpe les paragraphes et on ne rencontrera pas
+    | lex_t :: _ -> (*On découpe les blocs internes à la section, soit des Paragraphes soit des Listes à Puces, et on ne rencontrera pas
     d'autre titre ou Liste_imbriquee après avoir lu un DeuxSautsLigne_t*)
-    coupe_tous_deuxsautsligne [] restants
+      (match restants with
+      | ElementListe_t :: _ -> coupe_tous_deuxsautsligne [] restants
+      | _ -> coupe_tous_deuxsautsligne [] (DeuxSautsLigne_t ::restants))
+    
     | [] -> (List.rev lus)
-    | _ -> failwith "Erreur : section qui contient autre chose que des Titre_t, Liste_imbriquee_t, ou qui ne commence
-    par par DeuxSautsLigne_t"
+    
   in modifie_sous_liste [] l
 
 

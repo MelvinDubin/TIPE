@@ -56,7 +56,7 @@ let rec traite_bloc (fichier : out_channel) (b : bloc) : unit =
       ecrit_balise_html_fermante fichier "li" 
       ) elements_liste ; 
     ecrit_balise_html_fermante fichier "ol"
-  |ListeAPuces (elements_liste) ->
+  | ListeAPuces (elements_liste) ->
     ecrit_balise_html_ouvrante fichier "ul" ; 
     List.iter (fun elt -> 
       ecrit_balise_html_ouvrante fichier "li";
