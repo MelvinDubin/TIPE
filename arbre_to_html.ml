@@ -9,6 +9,7 @@ let balise_html_effet (e : effet) = match e with
   |Italique -> "I" 
   |Gras -> "B"
   |Couleur _ -> failwith "balise html ouvrante différente de celle fermante"
+  |Taille _ -> failwith "balise html ouvrante différente de celle fermante"
   |EffetVide -> failwith "pas de balise associée"
   |_ -> failwith "pas encore implémenté"
 
@@ -35,6 +36,10 @@ let rec traite_texte (fichier : out_channel) (t : texte) : unit =
     (match e with 
     |Couleur str -> 
       ecrit_balise_html_ouvrante fichier ("font color =\""^str^"\"") ; 
+      List.iter (traite_texte fichier) sous_textes ; 
+      ecrit_balise_html_fermante fichier "font"
+    |Taille n -> 
+      ecrit_balise_html_ouvrante fichier ("font size =\""^(string_of_int n)^"pt\"") ; 
       List.iter (traite_texte fichier) sous_textes ; 
       ecrit_balise_html_fermante fichier "font"
     |EffetVide -> List.iter (traite_texte fichier) sous_textes
