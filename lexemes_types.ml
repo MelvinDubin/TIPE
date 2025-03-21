@@ -21,7 +21,7 @@ type lexeme_t =
   | ListePuces_t of (lexeme_t list list) 
   | Diese_t
   | Titre_t of int*(lexeme_t list) (*l'entier = le niveau du titre*) 
-  | Liste_inmbriquee_t of lexeme_t list
+  | Liste_imbriquee_t of lexeme_t list
 
   
 let rec print_lex (lex: lexeme_t): unit =

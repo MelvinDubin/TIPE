@@ -8,6 +8,7 @@ type effet =
   |EffetVide 
   |A_implementer
   |Couleur of string 
+  |Taille of int 
 
 (*textes et effets avec du texte, pas de retour à la ligne autorisé*)
 type texte = 

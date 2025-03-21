@@ -15,3 +15,31 @@ let ajoute_couleurs_titres (d : doc) (colors : string array) : doc =
   in 
   List.map traite_division d 
 
+(*ajoute au document d un sommaire contenant les titres de niveaux supérieurs au niveau niveau_min*)
+let ajoute_sommaire (d : doc) (niveau_min : int) = 
+
+  (*renvoie la liste de titres de d dans l'ordre d'un parcours en profondeur depuis les fils gauches*)
+  let rec trouve_titres (d_aux : doc) : titres list = 
+    match d_aux with 
+    |Section ((i,t),sous_divisions) -> if (i>=niveau_min) then
+      (List.fold_left (fun accu l -> accu@l) [(i,t)] trouve_titres sous_divisions)
+      else ([])
+    |Paragraphe _ -> []
+    |Barre -> []
+  in 
+  let liste_titres = trouve_titres d in
+  let compteurs = Array.make 6 0 in (*compte le nombre de titres pour ajouter les numéros devant le sommaire (chaque case correspond au numéro de chaque niveau de titres)*)
+
+  let titre_to_texte2 (t : titre) : texte = 
+    let i,txt = t in 
+    compteurs.(j) <- compteurs.(j) + 1; 
+    for j = (i+1) to 5 do 
+      compteurs.(j) <- 0 
+    done ; 
+    Texte [Texte_effet (Taille i, [Texte_nu (string_of_int(compteurs.(j))^". "), txt])]
+  in
+ 
+  let titres : bloc list = List.map titre_to_texte liste_titres in 
+  let sommaire = Section ((6,Texte_effet (Gras, [Texte_nu "Sommaire :"])), [Paragraphe titres]) in
+  sommaire::doc 
+
