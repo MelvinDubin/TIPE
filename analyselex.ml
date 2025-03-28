@@ -109,17 +109,7 @@ let rec pretraitement_lexeme_list_aux (l: lexeme list) (l_t: lexeme_t list): lex
   (*Liste de niveau 0, sans tab devant*)
   | saut_ligne_lex :: marqueur_liste :: Espace_l :: q
     when ((marqueur_liste = Etoile_l) || (marqueur_liste = Tiret_l))
-    &&((saut_ligne_lex = SautLigne_l) || (saut_ligne_lex = DeuxSautsLigne_l)) -> pretraitement_lexeme_list_aux q ((ElementListe_t 0) :: l_t)
-  
-  (*Sous liste potentielle qui commence par des Tab*)
-  | saut_ligne_lex :: Tab_l :: q -> (
-    let (nb_tab, suite) = compte_lexeme Tab_l (Tab_l :: q) 0 in
-    match suite with
-    | marqueur_liste :: Espace_l :: r when (marqueur_liste=Etoile_l)||(marqueur_liste=Tiret_l)
-      -> pretraitement_lexeme_list_aux r ((ElementListe_t nb_tab) :: l_t)
-    | _ -> pretraitement_lexeme_list_aux suite (Tab_t nb_tab :: saut_ligne_lex :: l_t)
-  )
-
+    &&((saut_ligne_lex = SautLigne_l) || (saut_ligne_lex = DeuxSautsLigne_l)) -> pretraitement_lexeme_list_aux q (ElementListe_t :: l_t)
   | Etoile_l :: q -> pretraitement_lexeme_list_aux q (Etoile_t :: l_t)
   | Texte_l t :: q -> pretraitement_lexeme_list_aux q (Texte_t t :: l_t)
   | Tiret_l :: q -> pretraitement_lexeme_list_aux q (Tiret_t :: l_t)
@@ -144,7 +134,7 @@ let transforme_dieses_titre (l: lexeme_t list): lexeme_t list =
     match ll with
     | SautLigne_t :: q -> (List.rev ll_t, q)
     | DeuxSautsLigne_t :: q -> (List.rev ll_t, q)
-    | ElementListe_t _ :: q -> (List.rev ll_t, ll) (*Si on coupe sur un début de liste, ça veut dire que le paragraphe commence par une liste, et on garde donc l'indicateur*)
+    | ElementListe_t :: q -> (List.rev ll_t, ll) (*Si on coupe sur un début de liste, ça veut dire que le paragraphe commence par une liste, et on garde donc l'indicateur*)
     | [] -> (List.rev ll_t, [])
     | Diese_t :: _ ->
       let (n, reste) = compte_lexeme Diese_t ll 0 in
@@ -154,27 +144,27 @@ let transforme_dieses_titre (l: lexeme_t list): lexeme_t list =
 
   let rec transfo_diese (ll: lexeme_t list) (ll_t: lexeme_t list): lexeme_t list =
     match ll with
-    | z :: Diese_t :: q  when (z=SautLigne_t || z=DeuxSautsLigne_t)->
-      begin
+    | z :: Diese_t :: q  when (z=SautLigne_t || z=DeuxSautsLigne_t)->(
       let (niv, reste) = compte_lexeme Diese_t (Diese_t :: q) 0 in
       match reste with
-      | x :: q
-      when ((List.mem x [Espace_t; SautLigne_t; DeuxSautsLigne_t]) && niv <= 6) ->
+      | Espace_t :: q
+      when (niv <= 6) ->
         (*C'est un titre*)
-        if x = Espace_t then
-          let (contenu_titre, suite) = lexemes_ligne_sansdiese q [] in
-          transfo_diese (suite) ((Titre_t (niv, contenu_titre)) :: ll_t)
-        else
-          (*Le titre est vide*)
-          transfo_diese (q) ((Titre_t (niv, [])) :: ll_t)
+        let (contenu_titre, suite) = lexemes_ligne_sansdiese q [] in
+        let vraie_suite = (
+          match suite with
+          | Diese_t ::_ -> DeuxSautsLigne_t :: suite
+          | _ -> suite
+        ) in
+        transfo_diese (vraie_suite) ((Titre_t (niv, contenu_titre)) :: ll_t)
       | _ ->
         (*Pas un titre*)
         transfo_diese reste (Texte_t (String.make niv '#') :: ll_t)
-      end
+    )
     | x :: q -> transfo_diese q (x :: ll_t)
     | [] -> List.rev ll_t
   in 
   transfo_diese l []
 
 let pretraitement_lexeme (l: lexeme list): lexeme_t list =
-  transforme_dieses_titre (DeuxSautsLigne_t :: (pretraitement_lexeme_list_aux l []))
+  transforme_dieses_titre (pretraitement_lexeme_list_aux (DeuxSautsLigne_l :: l) [])

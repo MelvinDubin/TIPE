@@ -16,15 +16,15 @@ type lexeme_t =
   | DeuxSautsLigne_t
   | SautLigne_t
   | Espace_t
-  | ElementListe_t of int (*L'entier devrait être le niveau de la liste, mais peut ne pas l'être au tout début*)
+  | ElementListe_t
   | Effet_t of (effet)*(lexeme_t list)
   | Gras_t of lexeme_t list
   | Italique_t of lexeme_t list
-  | ListePuces_t of int*(lexeme_t list) (*l'entier = le niveau de sous-liste, aussi grand qu'on veut*)
+  | ListePuces_t of (lexeme_t list)
   | Diese_t
   | Titre_t of int*(lexeme_t list) (*l'entier = le niveau du titre*) 
   | Liste_imbriquee_t of lexeme_t list
-  | Tab_t of int (*Nombre de tab consécutifs*)
+  | Tab_t
 
   
 let rec print_lex (lex: lexeme_t): unit =
