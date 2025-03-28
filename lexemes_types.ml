@@ -6,6 +6,7 @@ type lexeme =
   |Diese_l
   |SautLigne_l 
   |DeuxSautsLigne_l
+  |Tab_l
 
 (*lexèmes après un pré traitement*)
 type lexeme_t = 
@@ -19,10 +20,11 @@ type lexeme_t =
   | Effet_t of (effet)*(lexeme_t list)
   | Gras_t of lexeme_t list
   | Italique_t of lexeme_t list
-  | ListePuces_t of lexeme_t list
+  | ListePuces_t of (lexeme_t list)
   | Diese_t
   | Titre_t of int*(lexeme_t list) (*l'entier = le niveau du titre*) 
   | Liste_imbriquee_t of lexeme_t list
+  | Tab_t
 
   
 let rec print_lex (lex: lexeme_t): unit =
