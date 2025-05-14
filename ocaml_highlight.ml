@@ -20,7 +20,6 @@ let transitions (etat: int) (c:char): int option=
 
 *)
 
-
 (*Renvoie un tableau d taille nv_taille dont toutes les premières valeurs sont celles de t*)
 let changetaille_tableau (t: 'a array) (nv_taille: int) (valeur_init: 'a): 'a array =
   let tableau_retour = Array.make nv_taille valeur_init in

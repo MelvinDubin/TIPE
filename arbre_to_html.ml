@@ -19,7 +19,6 @@ let balise_html_titre (i : int) =
   assert(i<=6) ; (*il n'y a que des titres de niveau 1 à 6*)
   "h"^(string_of_int i)
 
-
 (*écrit la balise html ouvrante contenant str dans le fichier out_channel*)
 let ecrit_balise_html_ouvrante (fichier : out_channel) (str : string)  : unit = 
     output_string fichier ("<" ^ str ^ ">")
