@@ -115,17 +115,24 @@ let char_list_to_string (lettres : char list) : string =
       |x::q ->  ecrit_fin_mot (accu^(String.make 1 x)) q
     in ecrit_fin_mot "" lettres
 
-(*lit le fichier preset et renvoie les informations nécessaires pour faire les modifications du fichier : 
-- un tableau de 6 cases contenant les couleurs voulues pour chaque titre de niveau correspondant à son indice (None s'il n'y en a pas)*)
-let lit_fichier_preset(filename : string) : string array =
 
-  let tableau_commandes = [|"couleur titre"|] in (*commandes qui seront reconnues*)
+(*lit le fichier preset (de nom filename) et renvoie les informations nécessaires pour faire les modifications du fichier : 
+- un tableau de 6 cases contenant les couleurs voulues pour chaque titre de niveau correspondant à son indice (None s'il n'y en a pas)
+- un numero entre 0 et 6, qui correspond au niveau de précision attendu du sommaire, s'il est à 0, pas de sommaire, s'il est à k>0, le sommaire affichera les titres de niveaux 1, 2, ... k
+- l'éventuel titre à écrire au début du document (si la commande de titre est lancé sans renseigner de titres particulier, alors on ajoute le nom du fichier markdown)
+*)
+
+let lit_fichier_preset(filename : string) (filename_md : string): ((string option) array)*int*(string option) =
+
+  let tableau_commandes = [|"couleur titre";"sommaire";"ajout titre"|] in (*commandes qui seront reconnues*)
   let autom_commandes,indices_etats_finaux = cree_autom_commandes tableau_commandes in 
   let f = open_in filename in 
   let n = Array.length tableau_commandes in 
 
   (*données à trouver*)
-  let colors = Array.make 6 "None" in
+  let colors = Array.make 6 None in
+  let sommaire = ref 0 in 
+  let titre = ref None in 
 
   (*renseigne les informations données par la commande qui finit sur l'état i dans l'automate appliqué à la suite de caractères suite_carac*)
   let comportement_commande (i : int) (suite_carac : char list) : unit = 
@@ -135,15 +142,35 @@ let lit_fichier_preset(filename : string) : string array =
       if (indices_etats_finaux.(j) = i) then (commande:=j) else ()
     done;
     match !commande with 
+
     |0 -> begin (*commande couleur_titre*)
       match suite_carac with 
       |' '::numero::' '::':'::couleur -> 
         if (couleur != []) then (
           let indice_tab_titre = int_of_char(numero) - 49 in (*int of char renvoie l'entier ascii, il faut aussi enlever 1 par rapport à l'indice du tableau*)
-          colors.(indice_tab_titre) <- char_list_to_string couleur  (*dans un fichier preset, il est possible de ne pas remplir tous les paramètres*)
+          colors.(indice_tab_titre) <- Some (char_list_to_string couleur)  (*dans un fichier preset, il est possible de ne pas remplir tous les paramètres*)
         ) 
-      |_ -> () (*si la syntaxe attendue n'est pas correcte, *)
+      |_ -> () (*si la syntaxe attendue n'est pas correcte, ne fait rien*)
     end 
+
+    |1 -> begin (*commande pour le sommaire*)
+      match suite_carac with 
+      |' '::numero::_ ->   
+        if ('1'<=numero && numero<='6') then (
+          sommaire := int_of_char(numero) - 48 
+        ) else (
+          sommaire := 6 (*si le numero saisi n'est pas correct, alors on décide d'afficher tous les titres*)
+        )
+      |_ ->  sommaire := 6 (*si on demande juste un sommaire sans préciser où s'arrêter, on part du principe que l'on met tous les titres*)
+    end
+
+    |2 -> begin (*commande pour ajouter un titre*)
+      match suite_carac with 
+      |' '::q -> titre := Some (char_list_to_string q)
+      |_ -> (*s'il n'y a pas de titre renseigné, on ajoute le titre fichier en tant que titre de niveau 1, mais il faut d'abord retirer le ".md final"*) 
+        titre := Some ("# "^(String.sub filename_md 0 (String.length(filename_md) -3)))
+    end
+
     |_ -> failwith "pas d'autres commandes pour le moment"
   in
   let fin_du_doc = ref false in 
@@ -158,4 +185,4 @@ let lit_fichier_preset(filename : string) : string array =
     with 
     |End_of_file -> fin_du_doc := true 
   done;
-  colors
+  colors,(!sommaire),!titre
