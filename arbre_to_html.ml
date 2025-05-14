@@ -4,12 +4,33 @@
 arbre_types.ml *)
 
 
-(*renvoie la balise html associée à un effet*)
-let balise_html_effet (e : effet) = match e with 
+(*renvoie la balise html ouvrante associée à un effet*)
+let balise_html_ouvrante_effet (e : effet) = match e with 
   |Italique -> "I" 
   |Gras -> "B"
-  |Couleur _ -> failwith "balise html ouvrante différente de celle fermante"
-  |Taille _ -> failwith "balise html ouvrante différente de celle fermante"
+  |Font (couleur,taille,id) -> "font"^
+    (match couleur with
+    |None -> ""
+    |Some c -> " color=\""^c^"\"")^
+    (match taille with 
+    |None -> ""
+    |Some t -> " size=\""^(string_of_int t)^"pt\""
+    )^(
+    match id with 
+    |None -> ""
+    |Some i -> " id="^i
+    )
+  |Cliquable lien -> "a href="^lien^""
+  |EffetVide -> failwith "pas de balise associée"
+  |_ -> failwith "pas encore implémenté"
+
+
+(*renvoie la balise html associée à un effet*)
+let balise_html_fermante_effet (e : effet) = match e with 
+  |Italique -> "I" 
+  |Gras -> "B"
+  |Font _ -> "font"
+  |Cliquable _ -> "a"
   |EffetVide -> failwith "pas de balise associée"
   |_ -> failwith "pas encore implémenté"
 
@@ -32,27 +53,18 @@ let ecrit_balise_html_fermante (fichier : out_channel) (str : string)  : unit =
 let rec traite_texte (fichier : out_channel) (t : texte) : unit = 
   match t with 
   |Texte_nu str -> output_string fichier str 
-  |Texte_effet (e,sous_textes) -> 
-    (match e with 
-    |Couleur str -> 
-      ecrit_balise_html_ouvrante fichier ("font color =\""^str^"\"") ; 
+  |Texte_effet(EffetVide,sous_textes) -> List.iter (traite_texte fichier) sous_textes ; 
+  |Texte_effet (e,sous_textes) -> (
+    let balise_ouvrante = balise_html_ouvrante_effet e in 
+    let balise_fermante = balise_html_fermante_effet e in 
+      ecrit_balise_html_ouvrante fichier balise_ouvrante ; 
       List.iter (traite_texte fichier) sous_textes ; 
-      ecrit_balise_html_fermante fichier "font"
-    |Taille n -> 
-      ecrit_balise_html_ouvrante fichier ("font size =\""^(string_of_int n)^"pt\"") ; 
-      List.iter (traite_texte fichier) sous_textes ; 
-      ecrit_balise_html_fermante fichier "font"
-    |EffetVide -> List.iter (traite_texte fichier) sous_textes
-    (*cas général sans arguments*)
-    |_ -> let balise = balise_html_effet e in 
-      ecrit_balise_html_ouvrante fichier balise ; 
-      List.iter (traite_texte fichier) sous_textes ; 
-      ecrit_balise_html_fermante fichier balise 
+      ecrit_balise_html_fermante fichier balise_fermante 
     )
 
 let rec traite_bloc (fichier : out_channel) (b : bloc) : unit = 
   match b with 
-  |Texte textes_liste -> List.iter (fun texte -> traite_texte fichier texte ; ecrit_balise_html_ouvrante fichier "bl") textes_liste 
+  |Texte textes_liste -> List.iter (fun texte -> traite_texte fichier texte ; ecrit_balise_html_ouvrante fichier "br") textes_liste 
   |ListeNumerotee (elements_liste) ->
     ecrit_balise_html_ouvrante fichier "ol" ; 
     List.iter (fun elt -> 
