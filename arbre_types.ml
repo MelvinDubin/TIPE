@@ -5,10 +5,10 @@
 type effet =
   |Italique
   |Gras
+  |Font of (string option*int option* string option) (*premier string : couleur ; entier : taille ; deuxième string : identifiant*)
+  |Cliquable of string (*lien sur lequel aller*)
   |EffetVide 
   |A_implementer
-  |Couleur of string 
-  |Taille of int 
 
 (*textes et effets avec du texte, pas de retour à la ligne autorisé*)
 type texte = 
