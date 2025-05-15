@@ -49,7 +49,7 @@ let changetaille_tableau (t: 'a array) (nv_taille: int) (valeur_init: 'a): 'a ar
 
 
 (*Renvoie un automate reconnaissant le même langage que a auquel on ajoute le mot dont les lettres sont les éléments de w*)
-let ajoute_mot_automate (a: automate) (w: char list): automate = 
+let ajoute_mot_automate_et_renvoie_son_etat_final (a: automate) (w: char list): automate * int= 
   (*Renvoie la fonction de transitions qui comprend : les transitions de nvelles_transitions, et de nouvelles
   transitions permettant la lecture du mot ww à partir de l'état init, ainsi que le nombre d'états en comptant les nouveaux qui ont du être ajoutés, et l'état
   final sur lequel aboutit la lecture de w*)
@@ -67,10 +67,7 @@ let ajoute_mot_automate (a: automate) (w: char list): automate =
         chercher à créer les suivantes/voir si elles existent déjà*)
         ajoute_mot_transitions nvelles_transitions q (Option.get etat_suiv) nb_etats
       else ( 
-        (*On crée un nouvel état et une nouvelle transition partant de init d'étiquette c*)
-        print_string "j'ajoute la transition suivante :\n";
-              print_int init; print_string " ";print_char c; print_string " "; print_int (nb_etats);print_newline ();
-              
+        (*On crée un nouvel état et une nouvelle transition partant de init d'étiquette c*)      
         ajoute_mot_transitions
           (fun etat etiquette ->    (*Fonction de transition qui comprend les transitions précédentes + la nouvelle*)
             match (etat,etiquette) with
@@ -87,21 +84,52 @@ let ajoute_mot_automate (a: automate) (w: char list): automate =
   let nv_etats_finaux = changetaille_tableau a.final nb_etats false in
   let nv_etats_initiaux = changetaille_tableau a.ini nb_etats false in
   nv_etats_finaux.(etat_final) <- true;
-  {
+  ({
     ini = nv_etats_initiaux;
     transi = transitions_update;
     final = nv_etats_finaux
-  }
+  },etat_final)
   
 
-(*Renvoie l'automate reconnaissant les mots reconnus par a et ceux de w_list*)
-let rec ajoute_plusieurs_mots_automate (a:automate) (w_list: string list): automate =
+
+(*Renvoie l'automate reconnaissant les mots reconnus par a et ceux de w_list,
+et une liste des nouveaux états finaux ajoutés à etats_finaux_base*)
+let rec ajoute_plusieurs_mots_automate (a:automate) (w_list: string list) (etats_finaux_base: int list): automate * (int list)=
   match w_list with
-  | [] -> a
-  | mot :: autres_mots -> ajoute_plusieurs_mots_automate (ajoute_mot_automate a (char_list_of_string mot)) autres_mots
+  | [] -> (a, etats_finaux_base)
+  | mot :: autres_mots -> ( 
+    let (nv_autom, nv_etat_f) = ajoute_mot_automate_et_renvoie_son_etat_final a (char_list_of_string mot) in
+    ajoute_plusieurs_mots_automate nv_autom autres_mots (nv_etat_f::etats_finaux_base)
+  )
 
 (*Renvoie un automate reconnaissant tous les mots de la liste langage*)
 let creer_automate_langage (langage : string list): automate =
   (*Création de l'automate reconnaissant le langage vide*)
   let autom = creer_automate 1 [0] [] (fun x y -> None) in
-  ajoute_plusieurs_mots_automate autom langage
+  let a, _ = ajoute_plusieurs_mots_automate autom langage []
+  in a
+
+(*L'exécution part de l'état etat_depart.
+Renvoie None si l'automate a ne peut pas lire le mot w entre les indices deb et fin inclus, renvoie Some etat si l'exécution de a sur ce
+mot arrive sur l'état etat*)
+let rec exec_mot (a: automate) (etat_depart: int) (w: string) (deb: int) (fin: int): int option =
+  assert(deb>=0 && fin < String.length w); 
+  if deb>fin then Some etat_depart
+  else
+    match a.transi etat_depart w.[deb] with
+    | None -> None
+    | Some nv_etat -> exec_mot a nv_etat w (deb+1) fin
+
+
+(*L'exécution part de l'état etat_depart.
+Renvoie : -le premier indice pour lequel w_deb...w_i n'a pas d'exécution dans a, et si il n'existe pas de tel i renvoie la taille de w
+          -l'état dans lequel est a en lisant w_deb..w_(i-1)*)
+let rec get_indice_mot_valide (a: automate) (etat_depart: int) (w: string) (deb: int): int*int =
+  match a.transi etat_depart w.[deb] with
+  | Some nv_etat -> (
+    if deb = (String.length w)-1 then
+      (String.length w, nv_etat)
+    else 
+      get_indice_mot_valide a nv_etat w (deb+1)
+  )
+  | None -> (deb, etat_depart)

@@ -20,11 +20,13 @@ let rec affiche_liste (l: lexeme_t list): unit =
   match l with
   | [] -> print_newline ()
   | Texte_t(t) :: q -> print_string t; print_string "; "; affiche_liste q
+  | Code_t(t) :: q -> print_string "code("; print_string t; print_string ");";affiche_liste q
   | Etoile_t :: q -> print_string "*"; print_string "; "; affiche_liste q
   | Effet_t(Gras,(ll)) :: q -> print_string "gras("; affiche_liste ll;print_string ");"; affiche_liste q 
   | Effet_t(Italique, (ll)) :: q -> print_string "ital("; affiche_liste ll;print_string ");"; affiche_liste q 
   | SautLigne_t :: q -> print_string "sautLigne"; affiche_liste q
   | Espace_t :: q -> print_string " "; affiche_liste q
+
   | _ -> failwith "pas implémenté"
 
 (* Découpe la liste de lexèmes traités en coupant à chaque nouveau titre de même niveau,
@@ -555,6 +557,7 @@ let lexemeliste_to_arbre_syntaxe (l: lexeme_t list): doc =
     | Diese_t :: q -> concatene_textes_avanteffet (texte_concatene^"#") q
     | [] -> (texte_concatene, [])
     | Effet_t(_, _) :: _ -> (texte_concatene, restants)
+    | Code_t _ :: _ -> (texte_concatene, restants)
     | l :: q -> (print_lex l; failwith "Erreur lors de la concaténation OU lexème non encore implémenté")
   
   in
@@ -569,6 +572,7 @@ let lexemeliste_to_arbre_syntaxe (l: lexeme_t list): doc =
     | Effet_t(eff, contenu) :: q -> 
       get_textelist_sanssautligne q
         (Texte_effet(eff, get_textelist_sanssautligne contenu []) :: tous_textes)
+
     | _ -> 
       let (str, suite) = concatene_textes_avanteffet "" effets_lex in
       get_textelist_sanssautligne suite (Texte_nu(str) :: tous_textes)
@@ -591,6 +595,19 @@ let lexemeliste_to_arbre_syntaxe (l: lexeme_t list): doc =
     List.rev (!texte_list)
   in
 
+  (*Renvoie une liste dont la fin est liste_acc, et qui ajoute à l'avant les blocs Texte ou Code créés en lisant la liste ll*)
+  let decoupe_texte_code (ll: lexeme_t list) (liste_acc: bloc list): bloc list =
+    let rec decoupe_texte_code_acc (liste_restante: lexeme_t list) (liste_pour_texte: lexeme_t list) (liste_creee): bloc list =
+      match liste_restante with
+      | [] -> if liste_pour_texte = [] then liste_creee else (Texte(get_textelist (List.rev liste_pour_texte))::liste_creee)
+      | Code_t t :: q -> (
+        let nvelle_liste = if liste_pour_texte = [] then (Code(Texte_nu(t))::liste_creee) else (Code(Texte_nu(t))::Texte(get_textelist (List.rev liste_pour_texte))::liste_creee) in
+        decoupe_texte_code_acc q [] nvelle_liste
+      )
+      | lex :: q -> decoupe_texte_code_acc q (lex::liste_pour_texte) liste_creee
+    in decoupe_texte_code_acc ll [] liste_acc
+  in
+
   (*Prends une liste ll de Liste_Imbriquee_t, de ListePuces_t, ou de Titre_t(_,_) et renvoie un couple (p, suite)
   où p est la liste de blocs (qui formera un paragraphe) obtenu en lisant ll tant que le lexème lu est du même type
   (soit on ne lit que des Liste_Imbriquee_t, soit que des ListePuces_t) et suite est la liste restante (le Titre_t(,) inclus)*)
@@ -601,7 +618,7 @@ let lexemeliste_to_arbre_syntaxe (l: lexeme_t list): doc =
     | Liste_imbriquee_t(q) :: suite -> (
       match q with
       | Titre_t(_,_) :: _ -> (List.rev paragraphe_acc, ll) (*Si c'est un titre, on arrête*)
-      | _ -> get_bloclist suite (Texte(get_textelist q) :: paragraphe_acc)
+      | _ -> get_bloclist suite (decoupe_texte_code q paragraphe_acc) (*!!*)
     )
     | ListePuces_t(q) :: suite -> (
       let blocs_dans_liste: (bloc list) ref = ref [] in
@@ -609,7 +626,7 @@ let lexemeliste_to_arbre_syntaxe (l: lexeme_t list): doc =
       while (!a_lire <> []) do
         print_lex_list (!a_lire); print_newline();
         let (premier_bloc_lexemes, suite_listepuces) = coupe_eltliste [] (!a_lire) in 
-        blocs_dans_liste := (Texte(get_textelist premier_bloc_lexemes)) :: (!blocs_dans_liste);
+        blocs_dans_liste := (decoupe_texte_code premier_bloc_lexemes (!blocs_dans_liste));(*!!*)
         a_lire := suite_listepuces
       done;
       get_bloclist suite (ListeAPuces(List.rev (!blocs_dans_liste)) :: paragraphe_acc)
