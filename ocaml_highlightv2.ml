@@ -10,13 +10,14 @@ type highlight_lex =
   | Type of string
   | Constructeur of string
   | NomVarFun of string
-  | Commentaire of string
+  | Commentaire of string 
 
-let tab_classes () = [|"ocaml_motcle";"ocaml_parenthese0";"ocaml_parenthese1";"ocaml_parenthese2";"ocaml_matching0";"ocaml_matching1";"ocaml_matching2";"ocaml_string";
+let tab_classes () = [|"ocaml_motcle";"ocaml_parenthese0";"ocaml_parenthese1";"ocaml_parenthese2";"ocaml_matching0";"ocaml_string";
 "ocaml_char";"ocaml_nombre";"ocaml_bool";"ocaml_type";"ocaml_constructeur";"ocaml_varfun"; "ocaml_commentaire"|]
-let tab_palette () = [|"#E06C75";"#FFD708";"#DA70BD";"#179FE0";"#E06C75";"#87B743";"#8379C6";"#E5C07A";"#E5C07A";"#C678DD";"#52B6C2";"#52B6C2";"#56B6C2";"#98C373";"#5C6370"|]
+let tab_palette () = [|"#AA3731";"#D96205";"#034EB0";"#08BA67";"#C43D38";"#38990E";"#006314";"#005DA0";"#C80C83";"#C80C83";"#CE7100";"#9B45A7";"#969696"|]
+let tab_palette_modesombre () = [|"#E06C75";"#FFD708";"#DA70BD";"#179FE0";"#8379C6";"#E5C07A";"#E5C07A";"#C678DD";"#52B6C2";"#52B6C2";"#56B6C2";"#98C373";"#5C6370"|]
 let nb_couleurs_parentheses () = 3
-let nb_couleurs_matching () = 3
+let nb_couleurs_matching () = 1
 
 (*Renvoie un automate reconnaissant des mots clés d'une syntaxe simplifiée d'ocaml, ainsi qu'un tableau d'entiers t tel que
 t.(i) donne le "type" d'un mot qui finit sur l'état final i
@@ -82,7 +83,6 @@ let creer_automate_ocaml (): automate * (int array) =
     (nb_etats, nb_etats+1, nb_etats+2, nb_etats+3, nb_etats+4, nb_etats+5, nb_etats+6,
     nb_etats+7, nb_etats+8, nb_etats+9, nb_etats+10, nb_etats+11) in  
   let nv_transi (etat:int) (etiquette:char): int option =
-    Printf.printf "j'entre dans 2eme couche avec etat: %d, etiquette:%c\n" etat etiquette;
     if (*etiquette_valide_pour_nv_transi1 etiquette*) true then (
       match (etat,etiquette) with
       | 0, n when List.mem n ['0';'1';'2';'3';'4';'5';'6';'7';'8';'9'] -> Some nb_debut
@@ -100,11 +100,9 @@ let creer_automate_ocaml (): automate * (int array) =
       | etat, '\"' when etat=str_content -> Some str_fin
       | etat, _ when etat=str_content -> Some str_content
       | _ -> (
-        Printf.printf "j'entre dans 3eme couche avec etat: %d, etiquette:%c\n" etat etiquette;
         match (!a).transi etat etiquette with
         | Some i -> Some i
         | None -> (
-          Printf.printf "je suis dans le None.\n";
           try (*Si etiquette pose une erreur dans le int_of_char*)
             let eti = int_of_char etiquette in 
             if (eti>=int_of_char 'a' && eti <= int_of_char 'z')||(etiquette='_')||(eti>=int_of_char 'A' && eti<=int_of_char 'Z')||
@@ -125,7 +123,6 @@ let creer_automate_ocaml (): automate * (int array) =
     final = nv_etats_finaux
   } in
 
-  print_endline "FIN PARTIE 2 ICI ?";
 
   (*Ajout des mots clés caractères spéciaux (qui ne peuvent pas commencer un mot blanc,
   ex: leto est coloré en blanc même si let est un mot clé, mais +o est coloré en rouge pour le +, et blanc pour le o)*)
@@ -134,7 +131,6 @@ let creer_automate_ocaml (): automate * (int array) =
   let a_temp, etats_f_parenthesage2 = ajoute_plusieurs_mots_automate (!nv_a) parenthesage2 [] in
   nv_a := a_temp;
 
-  print_endline "test1";
   (*Pour ajouter les commentaires, il faut brancher le mot "(*" là où il y avait déjà la parenthèse ouvrante dans l'automate (com_deb : commentaire début)*)
   let a_temp, com_deb = ajoute_mot_automate_et_renvoie_son_etat_final (!nv_a) ['(';'*'] in
   nv_a := a_temp;
@@ -142,15 +138,13 @@ let creer_automate_ocaml (): automate * (int array) =
 
 
 
-  print_endline "test2";
   let nb_etats = Array.length (!nv_a).ini in
   let nv_etats_finaux = changetaille_tableau (!nv_a).final (nb_etats+4) false in
   let nv_etats_initiaux = changetaille_tableau (!nv_a).ini (nb_etats+4) false in 
   let (com_deb, com_content, com_fin, com_fin2) = (nb_etats, nb_etats+1, nb_etats+2, nb_etats+3) in
-  print_endline "test3";
+
 
   let nv_transi_final (etat: int) (etiquette: char): int option =
-    Printf.printf "j'entre dans 1ere couche avec etat: %d, etiquette:%c\n" etat etiquette;
     match etat, etiquette with
     | 0, '(' -> Some com_deb
     | etat, '*' when etat=com_deb -> Some com_content
@@ -165,10 +159,7 @@ let creer_automate_ocaml (): automate * (int array) =
       else (!nv_a).transi etat etiquette
     
   in
-  print_endline "test4";
   List.iter (fun i -> nv_etats_finaux.(i) <- true) [com_fin2; nb_debut; nb_decimales; char_fin; str_fin; nocolor_content];
-  
-  print_endline "FIN PARTIE 3 ICI ?";
 
   (*Ce tableau sera renvoyé, il indique dans la case i la catégorie des mots finissant en i à la lecture*)
   let tableau_types_etatsfinaux = Array.make (Array.length nv_etats_finaux) 0 in
@@ -186,9 +177,7 @@ let creer_automate_ocaml (): automate * (int array) =
   tableau_types_etatsfinaux.(com_fin) <- 9;
   tableau_types_etatsfinaux.(com_content) <- 9;
   tableau_types_etatsfinaux.(com_fin2) <- 9;
-  (*a ajouter : constructeurs = 10*)
   
-  print_endline "FIN PARTIE 4 ICI ?";
   ({
     ini = nv_etats_initiaux;
     transi = nv_transi_final;
@@ -426,13 +415,13 @@ let ecrit_css (nomfichier: string) (tab_classes: string array) (tab_palette: str
   let n = Array.length tab_classes in
   assert(n = Array.length tab_palette);
   let file_out = open_out nomfichier in
-  output_string file_out ".ocaml_code{\n    color: white;\n    background-color: #222222;\n    line-height: 2em;\n}";
+  output_string file_out ".ocaml_code{\n    background-color: #EEEEEE;\n	max-width: 70em;\n    line-height: 1.8em;\n    padding: 8px;\n    white-space: pre-wrap;\n    border: 2px solid #D6D6D6;\n}\n";
   for i = 0 to (n - 1) do
     output_string file_out ".";
     output_string file_out tab_classes.(i);
     output_string file_out "{\n\tcolor: ";
     output_string file_out tab_palette.(i);
-    output_string file_out ";\n}\n"
+    output_string file_out ";\nfont-weight: bold;}\n"
   done;
   close_out file_out
 

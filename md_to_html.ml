@@ -34,6 +34,8 @@ let markdown_to_html_with_filters (filename_md : string) (filename_html : string
 (*Crée le fichir filename dans lequel est écrit contenu*)
 let markdown_to_html (filename_md: string) (filename_html: string): unit =
   let liste_pretraitee, doit_ecrire_css = pretraitement_lexeme (texte_to_lexeme_list (lit_fichier filename_md)) in
+  if doit_ecrire_css then print_string "\n\nOUIIIIIIIIIIIII-------------------------------\n\n" else print_string "\n\nNONNNNNNNNNNNNNNN-------------------------------\n\n";
+  
   let arbre_syntaxe = lexemeliste_to_arbre_syntaxe liste_pretraitee in
   let file_out = open_out filename_html in
   ecrit_en_html file_out (arbre_syntaxe) doit_ecrire_css;

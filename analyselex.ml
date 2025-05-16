@@ -136,8 +136,10 @@ let pretraitement_lexeme_list_aux (lexlist: lexeme list): (lexeme_t list)*bool =
     | DeuxSautsLigne_l :: q -> aux_modifie_hascode q (DeuxSautsLigne_t :: l_t)
     | Diese_l :: q -> aux_modifie_hascode q (Diese_t :: l_t)
     | Tab_l :: q -> aux_modifie_hascode q (Tab_t :: l_t)
-    | Code_l t :: q -> (has_code:= true; aux_modifie_hascode q (Code_t t :: l_t))
-  in (aux_modifie_hascode lexlist [], !has_code)
+    | Code_l t :: q -> (has_code:= true; aux_modifie_hascode q (Code_t (if t.[0] = '\n' then String.sub t 1 ((String.length t) -1) else t) :: l_t))
+  in
+  let l_modif = aux_modifie_hascode lexlist [] in
+  (l_modif, !has_code)
 
 (*Renvoie la liste de lexèmes traités obtenue en remplaçant les séquences
 de # pour faire un titre par le lexème Titre_t(i, sl) où i est le niveau du titre

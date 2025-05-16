@@ -613,7 +613,6 @@ let lexemeliste_to_arbre_syntaxe (l: lexeme_t list): doc =
   (soit on ne lit que des Liste_Imbriquee_t, soit que des ListePuces_t) et suite est la liste restante (le Titre_t(,) inclus)*)
   let rec get_bloclist (ll: lexeme_t list) (paragraphe_acc: bloc list): (bloc list)*(lexeme_t list) =
     print_endline "Appel à get_bloclist";
-    (*Si type_para est 0, on lit des Liste_Imbriquee_t, si c'est 1 on lit des ListePuces_t*)
     match ll with
     | Liste_imbriquee_t(q) :: suite -> (
       match q with

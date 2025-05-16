@@ -83,11 +83,11 @@ let rec traite_bloc (fichier : out_channel) (b : bloc) : unit =
   | Code (t) ->(
     match t with
     | Texte_nu texte_code -> (
-      ecrit_balise_html_ouvrante fichier "pre class=\"ocaml_code\"";
       ecrit_balise_html_ouvrante fichier "code";
+      ecrit_balise_html_ouvrante fichier "pre class=\"ocaml_code\"";
       output_string fichier (colore_code_ocaml texte_code);
+      ecrit_balise_html_fermante fichier "pre";
       ecrit_balise_html_fermante fichier "code";
-      ecrit_balise_html_fermante fichier "pre class=\"ocaml_code\"";
     )
     | _ -> failwith "Pas le bon format de bloc de code"
   )
