@@ -19,6 +19,7 @@ type bloc =
   |Texte of (texte list) (*retour à la ligne entre chaque élément de liste*)
   |ListeNumerotee of bloc list 
   |ListeAPuces of bloc list
+  |Code of texte
   (*|Tableau
   |Code*) (*a implementer*) 
 
