@@ -110,3 +110,29 @@ let ajoute_titre (d : doc) (str : string) =
   (*on relance une analyse lexicale sur le str*)
   let titre = lexemeliste_to_arbre_syntaxe (let l,_ = pretraitement_lexeme (texte_to_lexeme_list str) in l) in 
   titre@d
+
+(*applique la fonction f sur tous les textes nus de d (but : détecter les raccourcis ajoutés par l'utilisateur et les transformer en effet)*)
+let raccourcis_to_effet (d : doc) (f : texte -> texte) = 
+
+  let rec transforme_texte (t : texte) : texte = 
+    print_string("boucle dans transforme_texte\n"); 
+    match t with 
+    |Texte_nu _ -> f t 
+    |Texte_effet (e,l) -> Texte_effet(e, List.map transforme_texte l)
+  in 
+  let rec transforme_bloc (b : bloc) : bloc = 
+    print_string("boucle dans transforme_bloc\n"); 
+    match b with 
+    |Texte l -> Texte (List.map transforme_texte l)
+    |ListeNumerotee l -> ListeNumerotee (List.map transforme_bloc l)
+    |ListeAPuces l -> ListeAPuces (List.map transforme_bloc l)
+  in
+  let rec transforme_division (div : division) : division =
+    
+    print_string("boucle dans transforme_division\n"); 
+    match div with 
+    |Section ((i,t),l) -> Section((i,transforme_texte t), List.map transforme_division l)
+    |Paragraphe l -> Paragraphe (List.map transforme_bloc l)
+    |Barre -> Barre
+  in 
+  List.map transforme_division d
