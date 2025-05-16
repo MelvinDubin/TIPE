@@ -5,7 +5,7 @@
 type effet =
   |Italique
   |Gras
-  |Font of (string option*int option* string option) (*premier string : couleur ; entier : taille ; deuxième string : identifiant*)
+  |Font of (string option*string option* string option) (*premier string : couleur ; deuxième string : taille ; troisième string : identifiant*)
   |Cliquable of string (*lien sur lequel aller*)
   |EffetVide 
   |A_implementer

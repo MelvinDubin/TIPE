@@ -14,7 +14,7 @@ let balise_html_ouvrante_effet (e : effet) = match e with
     |Some c -> " color=\""^c^"\"")^
     (match taille with 
     |None -> ""
-    |Some t -> " size=\""^(string_of_int t)^"pt\""
+    |Some t -> " size=\""^t^"\""
     )^(
     match id with 
     |None -> ""
