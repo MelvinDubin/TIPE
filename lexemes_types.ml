@@ -7,6 +7,7 @@ type lexeme =
   |SautLigne_l 
   |DeuxSautsLigne_l
   |Tab_l
+  |Code_l of string
 
 (*lexèmes après un pré traitement*)
 type lexeme_t = 
@@ -25,6 +26,7 @@ type lexeme_t =
   | Titre_t of int*(lexeme_t list) (*l'entier = le niveau du titre*) 
   | Liste_imbriquee_t of lexeme_t list
   | Tab_t
+  | Code_t of string
 
   
 let rec print_lex (lex: lexeme_t): unit =
@@ -41,6 +43,7 @@ let rec print_lex (lex: lexeme_t): unit =
   | Diese_t -> print_string "diese"
   | Titre_t(n, l) -> (print_string "titre(niv:"; print_int n; print_char ','; print_lex_list l; print_string ")")
   | Liste_imbriquee_t(l) -> (print_string "LI("; print_lex_list l; print_string ")")
+  | Code_t(t) -> (print_string "Code(";print_string t; print_string ")" )
   | _ -> failwith "pas assigné"
 
 and print_lex_list (l: lexeme_t list): unit =

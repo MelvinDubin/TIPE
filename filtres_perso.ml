@@ -108,7 +108,7 @@ let ajoute_sommaire (d : doc) (niveau_min : int) =
 (*ajoute le titre contenu dans str (écrit en markdown), au début du document d*)
 let ajoute_titre (d : doc) (str : string) = 
   (*on relance une analyse lexicale sur le str*)
-  let titre =lexemeliste_to_arbre_syntaxe (pretraitement_lexeme (texte_to_lexeme_list str)) in 
+  let titre = lexemeliste_to_arbre_syntaxe (let l,_ = pretraitement_lexeme (texte_to_lexeme_list str) in l) in 
   titre@d
 
 (*applique la fonction f sur tous les textes nus de d (but : détecter les raccourcis ajoutés par l'utilisateur et les transformer en effet)*)

@@ -80,6 +80,17 @@ let rec traite_bloc (fichier : out_channel) (b : bloc) : unit =
       ecrit_balise_html_fermante fichier "li"  
       ) elements_liste ; 
     ecrit_balise_html_fermante fichier "ul"
+  | Code (t) ->(
+    match t with
+    | Texte_nu texte_code -> (
+      ecrit_balise_html_ouvrante fichier "code";
+      ecrit_balise_html_ouvrante fichier "pre class=\"ocaml_code\"";
+      output_string fichier (colore_code_ocaml texte_code);
+      ecrit_balise_html_fermante fichier "pre";
+      ecrit_balise_html_fermante fichier "code";
+    )
+    | _ -> failwith "Pas le bon format de bloc de code"
+  )
   (*à implémenter : code tableaux etc*)
 
 let rec traite_division (fichier : out_channel) (d : division) : unit = 
@@ -105,9 +116,11 @@ let rec traite_division (fichier : out_channel) (d : division) : unit =
   |Barre -> ecrit_balise_html_ouvrante fichier "hr"
 
 
-let ecrit_en_html (fichier: out_channel)  (document : doc) : unit = 
+let ecrit_en_html (fichier: out_channel) (document : doc) (link_css: bool): unit = 
   ecrit_balise_html_ouvrante fichier "html" ;
   ecrit_balise_html_ouvrante fichier "head";
+  if link_css then ecrit_balise_html_ouvrante fichier "link rel=\"stylesheet\" type=\"text/css\" href=\"style.css\">"
+  else ();
   ecrit_balise_html_fermante fichier "head";
   ecrit_balise_html_ouvrante fichier "body";
   List.iter (traite_division fichier) document ;
